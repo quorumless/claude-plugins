@@ -22,7 +22,7 @@ Syncing the marketplace enables nothing. A mod runs only where you install it. D
 
 | Plugin | What it does |
 |--------|--------------|
-| `agent-status` | Background agents above the prompt and in an `/agents` pane: runtime, last response, last call |
+| `agent-status` | Background agents above the prompt and in an `/bg-agents` pane: runtime, last response, last call |
 | `cc-status` | Status line: model, context usage circle (green <50%, yellow <75%, red above) with window size, secret-guard lock. Expects `secret-guard` to be installed |
 | `secret-guard` | Masks secrets in prompts, subagent messages and tool output; restores them only when a tool runs; blocks commits that leak them; `/secret` copies one to the clipboard |
 

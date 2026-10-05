@@ -6,8 +6,9 @@
   "plugins": [
     {
       "name": "agent-status",
+      "version": "0.1.1",
       "source": "./plugins/agent-status",
-      "description": "Background agents above the prompt and in an /agents pane: runtime, last response, last call"
+      "description": "Background agents above the prompt and in an /bg-agents pane: runtime, last response, last call"
     },
     {
       "name": "cc-status",

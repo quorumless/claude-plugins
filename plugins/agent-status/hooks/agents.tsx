@@ -71,7 +71,7 @@ export const register: Register = on => {
   }
 
   on('session.start', async ($, e, next) => {
-    await $.command.register({ name: 'agents', description: 'Show background agents in a pane' })
+    await $.command.register({ name: 'bg-agents', description: 'Show background agents in a pane' })
     $.clock.every(1000, () => {
       if (active) $.ui.invalidate('ui.render')
     })
@@ -79,7 +79,7 @@ export const register: Register = on => {
     return next(e)
   })
 
-  on('command.run', { command: 'agents' }, async $ => {
+  on('command.run', { command: 'bg-agents' }, async $ => {
     await $.ui.open({ id: PANE, title: 'Agents' })
 
     return { text: 'Agents pane opened.' }

@@ -1,1 +1,1 @@
-{ "name": "agent-status", "version": "0.1.0", "description": "Background agents above the prompt and in an /agents pane: runtime, last response, last call" }
+{ "name": "agent-status", "version": "0.1.1", "description": "Background agents above the prompt and in an /bg-agents pane: runtime, last response, last call" }
