@@ -1,0 +1,23 @@
+{
+  "name": "quorumless-plugins",
+  "owner": {
+    "name": "quorumless"
+  },
+  "plugins": [
+    {
+      "name": "agent-status",
+      "source": "./plugins/agent-status",
+      "description": "Background agents above the prompt and in an /agents pane: runtime, last response, last call"
+    },
+    {
+      "name": "cc-status",
+      "source": "./plugins/cc-status",
+      "description": "Claude Code Status: model | context usage circle (green <50%, yellow <75%, red above) with window size | secret-guard lock"
+    },
+    {
+      "name": "secret-guard",
+      "source": "./plugins/secret-guard",
+      "description": "Masks secrets in prompts, subagent messages and tool output; restores them only when a tool runs; blocks commits that leak them; /secret copies one to the clipboard"
+    }
+  ]
+}

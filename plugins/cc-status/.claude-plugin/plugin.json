@@ -1,0 +1,5 @@
+{
+  "name": "cc-status",
+  "version": "0.1.0",
+  "description": "Claude Code Status: model | context usage circle (green <50%, yellow <75%, red above) with window size | secret-guard lock"
+}
