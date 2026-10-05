@@ -3,6 +3,8 @@ import type { Register } from 'claude-code'
 // empty to full, quarter steps
 const CIRCLES = ['○', '◔', '◑', '◕', '●']
 
+const SEP = '  │  '
+
 const color = (pct: number) => (pct < 50 ? 'green' : pct < 75 ? 'yellow' : 'red')
 
 const size = (tokens: number) =>
@@ -31,19 +33,22 @@ export const register: Register = on => {
 
     const pct = Math.min(100, context.percent)
     const guard = (await $.state.get(GUARD).catch(() => undefined))?.value
+    const ptl = (await $.fs.read(`${await $.env.get('HOME')}/.claude/.ponytail-active`).catch(() => '')).trim()
     const { Box, Text } = $.ui.resolve(e)
 
     return (
       <Box>
-        <Text dimColor>{short(model)} | </Text>
-        <Text color={color(pct)}>{CIRCLES[Math.min(4, Math.round(pct / 25))]}</Text>
-        <Text dimColor> {Math.round(pct)}% of {size(context.window)} | </Text>
+        <Text color="cyan" bold>{short(model)}</Text>
+        <Text>{SEP}</Text>
+        <Text color={color(pct)}>{CIRCLES[Math.min(4, Math.round(pct / 25))]} {Math.round(pct)}% of {size(context.window)}</Text>
+        <Text>{SEP}</Text>
         {guard?.ok && guard.enabled === false ? (
           <Text color="yellow">🔓 off</Text>
         ) : (
-          <Text color={guard?.ok ? 'green' : 'red'}>{guard?.ok ? '🔒' : '🔓'}</Text>
+          <Text color={guard?.ok ? 'green' : 'red'} bold={!guard?.ok}>{guard?.ok ? '🔒' : '🔓 !'}</Text>
         )}
-        {guard?.masked ? <Text dimColor> {guard.masked}</Text> : null}
+        {guard?.masked ? <Text dimColor>{SEP}{guard.masked}</Text> : null}
+        {ptl && ptl !== 'full' ? <Text color="magenta">{SEP}ptl:{ptl}</Text> : null}
       </Box>
     )
   })
