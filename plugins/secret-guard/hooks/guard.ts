@@ -1,6 +1,6 @@
 import type { EngineInterface as $, Register } from 'claude-code'
 
-import { type Mode, parseVault, quote, redact, rehydrate, scrubKnown } from './redact.ts'
+import { ENV_FILES, type Mode, parseEnv, parseVault, quote, redact, rehydrate, scrubKnown } from './redact.ts'
 import type { SecretGuardHealth as Health } from '../types/index.d.ts'
 
 // ponytail: plaintext env file (dir 700, file 600); age-encrypt it if the disk itself is a concern
@@ -36,8 +36,40 @@ const setHealth = async ($: $, health: Health) => {
   await $.state.set(HEALTH, health).catch(() => undefined)
 }
 
+// append-only (O_APPEND) under umask 077: no lost writes between sessions, never world-readable
+const append = async ($: $, lines: string) => {
+  const { dir, file } = await paths($)
+  try {
+    const ran = await $.process.run(
+      ['sh', '-c', 'umask 077; mkdir -p "$1" && chmod 700 "$1" && cat >> "$2" && chmod 600 "$2"', 'sh', dir, file],
+      { stdin: lines },
+    )
+    if (ran.exitCode !== 0) throw new Error(`exit ${ran.exitCode}`)
+  } catch (err) {
+    // the value is lost but still kept out of the model; never pass it through
+    $.ui.toast(`⚠️ secret-guard: vault write failed (${err}), value dropped`)
+  }
+}
+
+// secret-looking values in the cwd's .env files join the vault, so a bare `echo $TOKEN` is masked
+// too: no keyword rule sees a value with no label next to it
+const syncEnv = async ($: $) => {
+  const cwd = await $.session.cwd()
+  const have = new Set((await load($)).entries.map(e => e.value))
+  let lines = ''
+  for (const f of ENV_FILES) {
+    for (const { name, value } of parseEnv(await $.fs.read(`${cwd}/${f}`).catch(() => ''))) {
+      if (have.has(value)) continue
+      have.add(value)
+      lines += `${await hashName(value)}=${quote(value)} # env ${f}:${name}\n`
+    }
+  }
+  if (lines) await append($, lines)
+}
+
 // redacts text, appending new values to the vault; undefined when nothing was found
 const guard = async ($: $, text: string, mode: Mode, source: string) => {
+  await syncEnv($)
   const vault = await load($)
   const scrubbed = scrubKnown(text, vault.known)
 
@@ -49,19 +81,7 @@ const guard = async ($: $, text: string, mode: Mode, source: string) => {
 
   const fresh = result.found.filter(f => !vault.byName.has(f.name))
   if (fresh.length > 0) {
-    const { dir, file } = await paths($)
-    const lines = fresh.map(f => `${f.name}=${quote(f.value)} # ${f.rule} ${source}\n`).join('')
-    try {
-      // append-only (O_APPEND) under umask 077: no lost writes between sessions, never world-readable
-      const ran = await $.process.run(
-        ['sh', '-c', 'umask 077; mkdir -p "$1" && chmod 700 "$1" && cat >> "$2" && chmod 600 "$2"', 'sh', dir, file],
-        { stdin: lines },
-      )
-      if (ran.exitCode !== 0) throw new Error(`exit ${ran.exitCode}`)
-    } catch (err) {
-      // the value is lost but still kept out of the model; never pass it through
-      $.ui.toast(`⚠️ secret-guard: vault write failed (${err}), value dropped`)
-    }
+    await append($, fresh.map(f => `${f.name}=${quote(f.value)} # ${f.rule} ${source}\n`).join(''))
   }
 
   const total = new Set(result.found.map(f => f.name))

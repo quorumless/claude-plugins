@@ -100,6 +100,25 @@ export const scrubKnown = (text: string, known: ReadonlyMap<string, string>): st
 export const rehydrate = (text: string, byName: ReadonlyMap<string, string>): string =>
   text.replace(/\$\{?(SECRET_\w+?)\}?(?![\w])/g, (whole, name: string) => byName.get(name) ?? whole)
 
+// .env files the guard learns values from: whatever is in them is masked wherever it shows up,
+// labelled or not (echo $TOKEN prints a bare value no keyword rule can see)
+export const ENV_FILES = ['.env', '.env.local', '.env.development', '.env.production'] as const
+const ENV_SECRET_NAME = /(?:^|_)(?:passw(?:or)?d|passwd|pwd|secret|token|api_?key|auth|credentials?|creds|private_?key|master_?key)(?:_|$)/i
+
+// NAME=value, export NAME=value, optional quotes, CRLF; only secret-looking names with a real value
+export const parseEnv = (raw: string): { name: string; value: string }[] => {
+  const out: { name: string; value: string }[] = []
+  for (const line of raw.split(/\r?\n/)) {
+    const m = line.match(/^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$/)
+    if (!m?.[1] || !ENV_SECRET_NAME.test(m[1])) continue
+    let v = m[2] ?? ''
+    const q = v.match(/^(["'])(.*)\1/)
+    v = q ? q[2] ?? '' : v.replace(/\s+#.*$/, '')
+    if (v.length >= 12 && !PLACEHOLDER.test(v)) out.push({ name: m[1], value: v })
+  }
+  return out
+}
+
 // vault line: SECRET_x='value' # rule source
 export const quote = (v: string) => `'${v.replace(/'/g, `'\\''`)}'`
 export const parseVault = (raw: string) => {
@@ -172,5 +191,15 @@ if (typeof process !== 'undefined' && import.meta.url === `file://${process.argv
   const raw = `SECRET_a1=${quote("it's")} # jwt prompt\nSECRET_2610041756_1='old'\njunk\n`
   const p = parseVault(raw)
   if (p.length !== 2 || p[0]?.value !== "it's" || p[0]?.note !== 'jwt' + ' pr' + 'ompt' || p[1]?.value !== 'old') throw new Error('par' + 'seV' + 'ault')
+  const bare = 'SPO' + 'XH2' + 'ZYV' + 'A2K' + 'IFU' + 'F3B' + 'HXD' + 'Z'
+  const env = parseEnv([
+    'KESTRA_DEV_' + 'AUTH=' + bare, `export API_${'TOK'}EN="${bare}2"`, `DB_PASS${'WORD'}='${bare}3' # prod`, `CRLF_${'SEC'}RET=${bare}4\r`,
+    'AWS_REGION=eu-central-1', 'AUTHOR=' + bare, 'TOKENIZER=' + bare, `${'API_'}KEY=$DB_PASS`, `SHORT_${'TOK'}EN=abc`, '# COMMENT_TOKEN=' + bare, 'NOEQUALS_' + 'TOKEN',
+  ].join('\n'))
+  const want = [bare, bare + '2', bare + '3', bare + '4']
+  if (env.map(e => e.value).join() !== want.join()) throw new Error(`parseEnv -> ${env.map(e => `${e.name}=${e.value.length}`).join()}`)
+  // a bare value, no label: only scrubKnown can catch it, which is the point of reading the file
+  const bareOut = scrubKnown(`prefix: ${bare}`, new Map([[bare, 'SECR' + 'ET_x']]))
+  if (bareOut !== 'prefix: $SECR' + 'ET_x') throw new Error(`bare -> ${bareOut}`)
   console.log('red' + 'act' + ': ok')
 }
