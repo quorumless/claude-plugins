@@ -1,6 +1,6 @@
 {
   "name": "secret-guard",
-  "version": "0.1.1",
-  "description": "Masks secrets in prompts, subagent messages and tool output, including values from .env files in the working directory; restores them only when a tool runs; blocks commits that leak them; /secret copies one to the clipboard",
+  "version": "0.1.2",
+  "description": "Masks secrets in prompts, subagent messages and tool output, including values from .env files in the working directory; restores them only when a tool runs; asks before a commit that leaks them; /secret copies one to the clipboard, forgets, allows or keeps one",
   "types": "./types/index.d.ts"
 }

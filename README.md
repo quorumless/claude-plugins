@@ -24,7 +24,7 @@ Syncing the marketplace enables nothing. A mod runs only where you install it. D
 |--------|--------------|
 | `agent-status` | Background agents above the prompt and in an `/bg-agents` pane: runtime, last response, last call |
 | `cc-status` | Status line: model, context usage circle (green <50%, yellow <75%, red above) with window size, secret-guard lock. Expects `secret-guard` to be installed |
-| `secret-guard` | Masks secrets in prompts, subagent messages and tool output, including values from `.env` files in the working directory (even a bare `echo $TOKEN`); restores them only when a tool runs; blocks commits that leak them; `/secret` copies one to the clipboard |
+| `secret-guard` | Masks secrets in prompts, subagent messages and tool output, including values from `.env` files in the working directory (even a bare `echo $TOKEN`); restores them only when a tool runs; asks before a commit that leaks them; `/secret` copies one to the clipboard, `/secret forget` or `/secret allow` clears a false positive, `/secret keep` masks a real one everywhere (these three only run when you type them) |
 
 ## Development
 
